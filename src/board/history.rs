@@ -1,7 +1,7 @@
-use super::GameState;
+use super::{gamestate, GameState};
 use crate::defs::*;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct GameHistory {
     list: [GameState; MAX_GAME_MOVES],
     count: usize,
@@ -27,6 +27,9 @@ impl GameHistory {
             None
         }
     }
+    pub fn count(&self) -> usize {
+        self.count
+    }
     pub fn get_current(&self) -> GameState {
         self.list[self.count]
     }
@@ -49,5 +52,14 @@ impl GameHistory {
     }
     pub fn previous(&self) -> Option<&GameState> {
         self.get_ref(self.count - 1)
+    }
+    pub fn print(&self) {
+        println!("BOARD.HISTORY ----------");
+        for index in 0..=self.count {
+            if let Some(gamestate) = self.get_ref(index) {
+                println!("History {}", index);
+                gamestate.debug();
+            }
+        }
     }
 }

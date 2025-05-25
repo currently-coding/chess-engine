@@ -2,7 +2,6 @@ use super::*;
 use crate::defs::*;
 use core::fmt;
 use std::fmt::Display;
-use std::ops::RangeInclusive;
 
 pub enum FenError {
     IncorrectLength,
@@ -31,10 +30,6 @@ impl Display for FenError {
 
 const LIST_OF_PIECES: &str = "kqrbnpKQRBNP";
 const VALID_SYMBOLS_PIECES_AND_SQUARES: &str = "kqrbnpKQRBNP/0123456789";
-// = RANK 3
-const EN_PASSANT_SQUARES_WHITE: RangeInclusive<Square> = Squares::A3..=Squares::H3;
-// = RANK 6
-const EN_PASSANT_SQUARES_BLACK: RangeInclusive<Square> = Squares::A6..=Squares::H6;
 const WHITE_AND_BLACK: &str = "wb";
 const SPLITTER: char = '/';
 const DASH: char = '-';
@@ -64,9 +59,9 @@ pub fn color(board: &mut Board, part: &str) -> Result<(), FenError> {
         return Err(FenError::Part2);
     }
     if let 'w' = c {
-        board.game_state.active_color = Sides::White as u8;
+        board.game_state.active_color = WHITE as u8;
     } else {
-        board.game_state.active_color = Sides::Black as u8;
+        board.game_state.active_color = BLACK as u8;
     }
     Ok(())
 }
@@ -143,6 +138,7 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
         println!("Error: No String provided.");
         return Err(FenError::Part1);
     }
+    // start at top left corner(square = 56)
     let mut file: u8 = 0;
     let mut rank: u8 = 7;
     let mut square;
@@ -150,6 +146,7 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
     let mut bitmask: u64 = 0;
     for c in part.chars() {
         square = (rank * 8) + file;
+        println!("{}->", square);
         // may be 64 after placing a piece on 63, but must be followed by a '/'
         if file == 8 && c != '/' {
             println!("Error: Square > 63 and no '/'");
@@ -161,46 +158,47 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
             return Err(FenError::Part1);
         }
         if c.is_alphabetic() {
+            println!("It's a piece!");
             bitmask = helper::get_bitmask(square);
         }
 
         match c {
             // shift a 1 to the respective digit in the bitboard
             'K' => {
-                board.pieces[Sides::White as usize][Pieces::King as usize] |= bitmask;
+                board.pieces[WHITE as usize][Pieces::King as usize] |= bitmask;
             }
             'k' => {
-                board.pieces[Sides::Black as usize][Pieces::King as usize] |= bitmask;
+                board.pieces[BLACK as usize][Pieces::King as usize] |= bitmask;
             }
             'Q' => {
-                board.pieces[Sides::White as usize][Pieces::Queen as usize] |= bitmask;
+                board.pieces[WHITE as usize][Pieces::Queen as usize] |= bitmask;
             }
             'q' => {
-                board.pieces[Sides::Black as usize][Pieces::Queen as usize] |= bitmask;
+                board.pieces[BLACK as usize][Pieces::Queen as usize] |= bitmask;
             }
             'R' => {
-                board.pieces[Sides::White as usize][Pieces::Rook as usize] |= bitmask;
+                board.pieces[WHITE as usize][Pieces::Rook as usize] |= bitmask;
             }
             'r' => {
-                board.pieces[Sides::Black as usize][Pieces::Rook as usize] |= bitmask;
+                board.pieces[BLACK as usize][Pieces::Rook as usize] |= bitmask;
             }
             'B' => {
-                board.pieces[Sides::White as usize][Pieces::Bishop as usize] |= bitmask;
+                board.pieces[WHITE as usize][Pieces::Bishop as usize] |= bitmask;
             }
             'b' => {
-                board.pieces[Sides::Black as usize][Pieces::Bishop as usize] |= bitmask;
+                board.pieces[BLACK as usize][Pieces::Bishop as usize] |= bitmask;
             }
             'N' => {
-                board.pieces[Sides::White as usize][Pieces::Knight as usize] |= bitmask;
+                board.pieces[WHITE as usize][Pieces::Knight as usize] |= bitmask;
             }
             'n' => {
-                board.pieces[Sides::Black as usize][Pieces::Knight as usize] |= bitmask;
+                board.pieces[BLACK as usize][Pieces::Knight as usize] |= bitmask;
             }
             'P' => {
-                board.pieces[Sides::White as usize][Pieces::Pawn as usize] |= bitmask;
+                board.pieces[WHITE as usize][Pieces::Pawn as usize] |= bitmask;
             }
             'p' => {
-                board.pieces[Sides::Black as usize][Pieces::Pawn as usize] |= bitmask;
+                board.pieces[BLACK as usize][Pieces::Pawn as usize] |= bitmask;
             }
             '/' => {
                 // TODO: add a check to not have '//' be possible
@@ -239,6 +237,8 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
     }
     // fen strings set h1=7 last
     if rank == 0 && file == 8 {
+        println!("Bitboards after fen reading:");
+        board.debug_bb();
         Ok(())
     } else {
         println!("Error: did not correctly SET ALL SQUARES.");
@@ -299,11 +299,11 @@ mod tests {
     fn test_color_valid() {
         let mut board = Board::new();
         assert!(color(&mut board, "w").is_ok());
-        assert_eq!(board.game_state.active_color, Sides::White as u8);
+        assert_eq!(board.game_state.active_color, WHITE as u8);
 
         let mut board = Board::new();
         assert!(color(&mut board, "b").is_ok());
-        assert_eq!(board.game_state.active_color, Sides::Black as u8);
+        assert_eq!(board.game_state.active_color, BLACK as u8);
     }
 
     #[test]

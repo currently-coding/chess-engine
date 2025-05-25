@@ -1,7 +1,7 @@
 use core::fmt;
 
 #[repr(usize)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Pieces {
     Pawn = 0,
     Bishop = 1,

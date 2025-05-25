@@ -1,37 +1,63 @@
 mod fen;
 mod gamestate;
 mod history;
-mod moves;
+pub mod moves;
 pub mod pieces;
 mod playmove;
 pub mod sides;
 mod zobrist;
 
+use core::fmt;
 use std::sync::Arc;
 
 use zobrist::ZobristKey;
 use zobrist::ZobristRandoms;
 
-use self::{fen::*, gamestate::GameState, history::GameHistory, pieces::Pieces, sides::Sides};
+use self::{fen::*, gamestate::GameState, history::GameHistory, pieces::Pieces};
 use crate::defs::*;
 use crate::helper;
 use crate::helper::*;
 
 #[derive(Clone)]
 pub struct Board {
-    pub pieces: [[Bitboard; NrOf::PIECE_TYPES]; Sides::Both as usize],
-    pub side: [Bitboard; Sides::Both as usize],
+    pub pieces: [[Bitboard; NrOf::PIECE_TYPES]; NrOf::SIDES],
+    pub side: [Bitboard; NrOf::SIDES],
     pub game_state: GameState,
     pub history: GameHistory,
     pub piece_list: [Pieces; NrOf::SQUARES],
     zobrist_randoms: Arc<ZobristRandoms>,
+    // TODO: make history start with first real gamestate instead of finst one being empty
+}
+
+impl PartialEq for Board {
+    fn eq(&self, other: &Self) -> bool {
+        println!("COMPARISON:");
+        self.game_state.debug();
+        other.game_state.debug();
+
+        self.pieces == other.pieces && // compare pieces
+        self.side == other.side && // compare side
+        self.game_state == other.game_state && // compare game state
+        self.piece_list == other.piece_list // ignore zobrist_randoms
+    }
+}
+
+impl fmt::Debug for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Board")
+            .field("pieces", &self.pieces)
+            .field("side", &self.side)
+            .field("game_state", &self.game_state)
+            .field("history", &&self.history.get_current())
+            .finish()
+    }
 }
 
 impl Board {
     pub fn new() -> Self {
         Self {
-            pieces: [[EMPTY; NrOf::PIECE_TYPES]; Sides::Both as usize],
-            side: [EMPTY; Sides::Both as usize],
+            pieces: [[EMPTY; NrOf::PIECE_TYPES]; NrOf::SIDES],
+            side: [EMPTY; NrOf::SIDES],
             game_state: GameState::new(),
             history: GameHistory::new(),
             piece_list: [Pieces::Empty; NrOf::SQUARES],
@@ -46,65 +72,61 @@ impl Board {
         // TODO: init psqt here as well
     }
     pub fn reset(&mut self) {
-        self.pieces = [[EMPTY; NrOf::PIECE_TYPES]; Sides::Both as usize];
-        self.side = [EMPTY; Sides::Both as usize];
+        self.pieces = [[EMPTY; NrOf::PIECE_TYPES]; NrOf::SIDES];
+        self.side = [EMPTY; NrOf::SIDES];
         self.game_state.clear();
         self.history.clear();
         self.piece_list = [Pieces::Empty; NrOf::SQUARES];
     }
     pub fn display(&self) {
-        for (count, piece) in self.piece_list.iter().rev().enumerate() {
-            if (NrOf::SQUARES - count) % 8 == 0 && count != 0 {
-                println!("|");
+        println!("Board:");
+        // start at square 56 = top left
+        let mut file = 0;
+        let mut rank = 7;
+        let mut square;
+        print!("|");
+        loop {
+            square = (rank * 8) + file;
+            print!("{}|", self.piece_list[square]);
+            if file == 7 {
+                file = 0;
+                if rank == 0 {
+                    break;
+                }
+                rank -= 1;
+
+                println!();
+                print!("|")
+            } else {
+                file += 1;
             }
-            print!("|");
-            // TODO: change to use PIECE_CHAR_CAPS/SMALL
-            let piece_string = match piece {
-                Pieces::Empty => PIECE_CHAR_CAPS[6],
-                Pieces::Pawn => PIECE_CHAR_CAPS[5],
-                Pieces::Knight => PIECE_CHAR_CAPS[4],
-                Pieces::Bishop => PIECE_CHAR_CAPS[3],
-                Pieces::Rook => PIECE_CHAR_CAPS[2],
-                Pieces::Queen => PIECE_CHAR_CAPS[1],
-                Pieces::King => PIECE_CHAR_CAPS[0],
-            };
-            print!("{}", piece_string);
         }
-        println!("|");
+        println!();
     }
 }
 
 impl Board {
-    // TODO:
-    // find out where to initialise the zobrist key in game_state
-    // change the initializing functions for the board
-    // fen should modify an existing board, not create a new one
-
     pub fn init_zobrist_key(&self) -> ZobristKey {
         println!("initializing ZobristKey");
         let mut key: u64 = 0;
         key ^= self.zobrist_randoms.castling(self.game_state.castling);
         key ^= self.zobrist_randoms.en_passant(self.game_state.en_passant);
-        key ^= self
-            .zobrist_randoms
-            .sides(Sides::from(self.game_state.active_color));
+        key ^= self.zobrist_randoms.sides(self.game_state.active_color);
 
         let mut square: u8;
         let mut tmp_square: Option<u8>;
         // TODO: could be reduced to manually get black and wihte instead of iterating over sides
-        for (s_idx, side) in self.pieces.iter().enumerate() {
-            for (p_idx, piece) in side.iter().enumerate() {
-                let mut p = *piece;
+        for (side, side_bb) in self.pieces.iter().enumerate() {
+            for (piece, piece_bb) in side_bb.iter().enumerate() {
+                let mut p = *piece_bb;
                 tmp_square = helper::next_bit(&mut p);
                 match tmp_square {
                     Some(s) => square = s,
                     None => continue,
                 }
-                key ^= self.zobrist_randoms.pieces(
-                    Sides::from(s_idx as u8),
-                    Pieces::from_index(p_idx),
-                    square,
-                );
+                key ^= self
+                    .zobrist_randoms
+                    .pieces(side as u8, Pieces::from_index(piece), square);
             }
         }
         println!("Done initializing ZobristKey");
@@ -123,29 +145,29 @@ impl Board {
         }
         board
     }
-    pub fn we(&self) -> usize {
-        self.game_state.active_color as usize
+    pub fn we(&self) -> u8 {
+        self.game_state.active_color
     }
     pub fn occupancy(&self) -> Bitboard {
-        self.side[Sides::White as usize] | self.side[Sides::Black as usize]
+        self.side[WHITE as usize] | self.side[BLACK as usize]
     }
-    pub fn opponent(&self) -> usize {
-        (self.game_state.active_color ^ 1) as usize
+    pub fn opponent(&self) -> u8 {
+        self.game_state.active_color ^ 1
     }
-    pub fn get_pieces(&self, side: Sides, piece: Pieces) -> u64 {
+    pub fn get_pieces(&self, side: u8, piece: Pieces) -> u64 {
         self.pieces[side as usize][piece as usize]
     }
-    pub fn get_side(&self, side: Sides) -> Bitboard {
+    pub fn get_side(&self, side: u8) -> Bitboard {
         self.side[side as usize]
     }
-    pub fn king(&self, side: Sides) -> Square {
+    pub fn king(&self, side: u8) -> Square {
         self.get_pieces(side, Pieces::King).trailing_zeros() as Square
     }
 
     // seems to work
     fn init_piece_list(&mut self) {
-        let bb_w = &self.pieces[Sides::White as usize]; // White piece bitboards
-        let bb_b = &self.pieces[Sides::Black as usize]; // Black piece bitboards
+        let bb_w = &self.pieces[WHITE as usize]; // White piece bitboards
+        let bb_b = &self.pieces[BLACK as usize]; // Black piece bitboards
 
         let mut piece_list = [Pieces::Empty; NrOf::SQUARES];
 
@@ -187,13 +209,21 @@ impl Board {
             parser(&mut tmp_board, part)?;
         }
         // self.pieces and some stuff is set up. now init self.side, self.piece_list, etc.
+        tmp_board.debug_bb();
         tmp_board.init();
         println!("--------");
         *self = tmp_board;
-        self.debug();
+        self.debug_bb();
         Ok(())
     }
-    pub fn debug(&self) {
+
+    pub fn debug_piece_list(&self) {
+        println!("Piecelist");
+        for piece in self.piece_list {
+            print!("{}, ", piece);
+        }
+    }
+    pub fn debug_bb(&self) {
         println!("Bitboards");
         for side in self.pieces {
             println!("--- ");
@@ -205,7 +235,10 @@ impl Board {
         for bitboard in self.side {
             println!("{:064b}", bitboard);
         }
-        println!("ZobristKey: {}", self.game_state.zobrist_key);
+    }
+    pub fn debug_all(&self) {
+        self.debug_bb();
+        self.game_state.debug();
     }
     pub fn is_dark_square(&self, square: Square) -> bool {
         let rank = square / 8;
@@ -215,8 +248,8 @@ impl Board {
         (even_file && even_rank) || (!even_file && !even_rank)
     }
     pub fn draw_by_insufficient_material(self) -> bool {
-        let w = self.get_bitboards(Sides::White);
-        let b = self.get_bitboards(Sides::Black);
+        let w = self.get_bitboards(WHITE);
+        let b = self.get_bitboards(BLACK);
 
         !(w[Pieces::Queen as usize] > 0
             || w[Pieces::Rook as usize] > 0
@@ -224,14 +257,14 @@ impl Board {
             || b[Pieces::Queen as usize] > 0
             || b[Pieces::Rook as usize] > 0
             || b[Pieces::Pawn as usize] > 0
-            || self.has_bishop_pair(Sides::Black)
-            || self.has_bishop_pair(Sides::White)
+            || self.has_bishop_pair(BLACK)
+            || self.has_bishop_pair(WHITE)
             || w[Pieces::Knight as usize].count_ones() >= 3
             || b[Pieces::Knight as usize].count_ones() >= 3
             || (w[Pieces::Knight as usize].count_ones() >= 1 && w[Pieces::Bishop as usize] >= 1)
             || (b[Pieces::Knight as usize].count_ones() >= 1 && b[Pieces::Bishop as usize] >= 1))
     }
-    fn has_bishop_pair(&self, side: Sides) -> bool {
+    fn has_bishop_pair(&self, side: u8) -> bool {
         let mut bb = self.get_piece_bb(side, Pieces::Bishop);
         let mut square;
         let mut dark_squared_bishop = false;
@@ -250,26 +283,25 @@ impl Board {
         }
         false
     }
-    fn get_piece_bb(&self, side: Sides, piece: Pieces) -> u64 {
+    fn get_piece_bb(&self, side: u8, piece: Pieces) -> u64 {
         self.pieces[side as usize][piece as usize]
     }
-    pub fn get_bitboards(&self, side: Sides) -> [u64; NrOf::PIECE_TYPES] {
+    pub fn get_bitboards(&self, side: u8) -> [u64; NrOf::PIECE_TYPES] {
         self.pieces[side as usize]
     }
 }
 #[cfg(test)]
 mod tests {
     use crate::board::Pieces;
+    use crate::defs::*;
     use crate::Board;
-
-    use super::sides::Sides;
 
     #[test]
     fn test_init_side_bb() {
         let mut board = Board::new();
-        board.pieces[Sides::White as usize][Pieces::Pawn as usize] = 0x0FF00000000;
+        board.pieces[WHITE as usize][Pieces::Pawn as usize] = 0x0FF00000000;
         board.init_side_bb();
-        assert_eq!(board.side[Sides::White as usize], 0x0FF00000000);
+        assert_eq!(board.side[WHITE as usize], 0x0FF00000000);
     }
     #[test]
     fn test_is_dark_square() {
@@ -288,23 +320,23 @@ mod tests {
     #[test]
     fn test_has_bishop_pair() {
         let mut board = Board::new();
-        board.pieces[Sides::White as usize][Pieces::Bishop as usize] = 0b01100000000u64;
-        board.pieces[Sides::Black as usize][Pieces::Bishop as usize] = 0b0000000010u64;
-        assert!(board.has_bishop_pair(Sides::White));
-        assert!(!board.has_bishop_pair(Sides::Black));
-        board.pieces[Sides::White as usize][Pieces::Bishop as usize] = 0b000110010010u64;
-        board.pieces[Sides::Black as usize][Pieces::Bishop as usize] = 0b000000000u64;
-        assert!(board.has_bishop_pair(Sides::White));
-        assert!(!board.has_bishop_pair(Sides::Black));
-        board.pieces[Sides::White as usize][Pieces::Bishop as usize] = 0b000010000u64;
-        board.pieces[Sides::Black as usize][Pieces::Bishop as usize] = 0b000110010010u64;
-        assert!(!board.has_bishop_pair(Sides::White));
-        assert!(board.has_bishop_pair(Sides::Black));
+        board.pieces[WHITE as usize][Pieces::Bishop as usize] = 0b01100000000u64;
+        board.pieces[BLACK as usize][Pieces::Bishop as usize] = 0b0000000010u64;
+        assert!(board.has_bishop_pair(WHITE));
+        assert!(!board.has_bishop_pair(BLACK));
+        board.pieces[WHITE as usize][Pieces::Bishop as usize] = 0b000110010010u64;
+        board.pieces[BLACK as usize][Pieces::Bishop as usize] = 0b000000000u64;
+        assert!(board.has_bishop_pair(WHITE));
+        assert!(!board.has_bishop_pair(BLACK));
+        board.pieces[WHITE as usize][Pieces::Bishop as usize] = 0b000010000u64;
+        board.pieces[BLACK as usize][Pieces::Bishop as usize] = 0b000110010010u64;
+        assert!(!board.has_bishop_pair(WHITE));
+        assert!(board.has_bishop_pair(BLACK));
     }
     #[test]
     fn test_has_sufficent_material() {
         let board = Board::fen(None);
-        board.debug();
+        board.debug_bb();
         assert!(!board.draw_by_insufficient_material());
         let board = Board::fen(Some("8/8/8/5k2/8/7Q/1K6/8 w - - 0 1"));
         assert!(!board.draw_by_insufficient_material());

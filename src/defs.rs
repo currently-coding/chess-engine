@@ -13,6 +13,12 @@ pub const SHORT_FEN_LENGTH: usize = 4;
 pub const FEN_LENGTH: usize = 6;
 pub const FEN_START_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+pub const EN_PASSANT_SQUARES_WHITE: RangeInclusive<Square> = Squares::A3..=Squares::H3;
+pub const EN_PASSANT_SQUARES_BLACK: RangeInclusive<Square> = Squares::A6..=Squares::H6;
+pub const EN_PASSANT_START_SQUARES_WHITE: RangeInclusive<Square> = Squares::A2..=Squares::H2;
+pub const EN_PASSANT_START_SQUARES_BLACK: RangeInclusive<Square> = Squares::A7..=Squares::H7;
+pub const EN_PASSANT_END_SQUARES_WHITE: RangeInclusive<Square> = Squares::A4..=Squares::H4;
+pub const EN_PASSANT_END_SQUARES_BLACK: RangeInclusive<Square> = Squares::A5..=Squares::H5;
 // ---
 pub struct Castling;
 impl Castling {
@@ -31,7 +37,11 @@ impl NrOf {
     pub const SQUARES: usize = 64;
     pub const FILES: usize = 8;
     pub const RANKS: usize = 8;
+    pub const SIDES: usize = 2;
 }
+
+pub const WHITE: u8 = 0;
+pub const BLACK: u8 = 1;
 
 // TRANSLATION
 #[rustfmt::skip]
@@ -48,7 +58,7 @@ pub const SQUARE_NAME: [&str; NrOf::SQUARES] = [
 pub const PIECE_NAME: [&str; NrOf::PIECE_TYPES + 1] =
     ["King", "Queen", "Rook", "Bishop", "Knight", "Pawn", "-"];
 pub const PIECE_CHAR_CAPS: [&str; NrOf::PIECE_TYPES + 1] = ["K", "Q", "R", "B", "N", "P", "_"];
-pub const PIECE_CHAR_SMALL: [&str; NrOf::PIECE_TYPES + 1] = ["k", "q", "r", "b", "n", "p", ""];
+pub const PIECE_CHAR_SMALL: [&str; NrOf::PIECE_TYPES + 1] = ["k", "q", "r", "b", "n", "", ""];
 
 // IMPORTANT BOARD SQUARES
 pub struct Squares;
@@ -73,6 +83,7 @@ impl Squares {
     pub const G8: Square = 62;
     pub const H8: Square = 63;
 
+    // all En-Passant related squares/ranges
     // White EP-squares start/end
     pub const A3: Square = 16;
     pub const H3: Square = 23;
@@ -80,6 +91,22 @@ impl Squares {
     // Black EP-squares start/end
     pub const A6: Square = 40;
     pub const H6: Square = 47;
+
+    // White EP-Squares start
+    pub const A2: Square = 8;
+    pub const H2: Square = 15;
+
+    // Black EP-Squares start
+    pub const A7: Square = 48;
+    pub const H7: Square = 55;
+
+    // White EP-Squares end
+    pub const A4: Square = 24;
+    pub const H4: Square = 31;
+
+    // Black EP-Squares end
+    pub const A5: Square = 32;
+    pub const H5: Square = 39;
 }
 
 // BOARD RANKS AND FILES

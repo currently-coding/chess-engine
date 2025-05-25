@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use super::{moves::*, zobrist::*};
 use crate::defs::*;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct GameState {
     pub active_color: u8,
     pub castling: u8,
@@ -14,6 +16,25 @@ pub struct GameState {
     pub psqt: [i16; NrOf::PIECE_TYPES],     // square values per piece
     pub next_move: Move,
 }
+
+impl PartialEq for GameState {
+    fn eq(&self, other: &GameState) -> bool {
+        println!("COMPARISON:");
+        self.debug();
+        other.debug();
+        self.active_color == other.active_color
+            && self.castling == other.castling
+            && self.halfmove_clock == other.halfmove_clock
+            && self.en_passant == other.en_passant
+            && self.fullmove_number == other.fullmove_number
+            && self.zobrist_key == other.zobrist_key
+            && self.game_phase == other.game_phase
+            && self.material == other.material
+            && self.psqt == other.psqt
+            && self.next_move == other.next_move
+    }
+}
+
 impl GameState {
     pub fn new() -> Self {
         Self {
@@ -41,5 +62,21 @@ impl GameState {
         self.psqt = [0; NrOf::PIECE_TYPES];
         self.game_phase = 0;
         self.next_move = Move::default();
+    }
+
+    pub(crate) fn debug(&self) {
+        println!("Game State Debug Information:");
+        println!("--------------------------------");
+        println!("Active Color: {}", self.active_color);
+        println!("Castling: {}", self.castling);
+        println!("Halfmove Clock: {}", self.halfmove_clock);
+        println!("En Passant: {:?}", self.en_passant);
+        println!("Fullmove Number: {}", self.fullmove_number);
+        println!("Zobrist Key: {}", self.zobrist_key);
+        println!("Game Phase: {}", self.game_phase);
+        println!("Material: {:?}", self.material);
+        println!("PSQT: {:?}", self.psqt);
+        println!("Next Move: {:?}", self.next_move);
+        println!("--------------------------------");
     }
 }

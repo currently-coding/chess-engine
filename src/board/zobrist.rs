@@ -2,16 +2,17 @@ use crate::defs::*;
 use rand::{RngCore, SeedableRng};
 use rand_chacha::ChaChaRng;
 
-use super::{pieces::Pieces, sides::Sides};
+use super::pieces::Pieces;
 
 pub type ZobristKey = u64;
 
+#[derive(Debug)]
 pub struct ZobristRandoms {
     // TODO: one could reduce the complexity by creating a side random, that will be xor-ed with
     // each rnd_piece when needed instead of creating twice as much keys
-    rnd_pieces: [[[u64; NrOf::SQUARES]; NrOf::PIECE_TYPES]; Sides::Both as usize],
+    rnd_pieces: [[[u64; NrOf::SQUARES]; NrOf::PIECE_TYPES]; NrOf::SIDES],
     rnd_castling: [u64; NrOf::CASTLING_PERMISSIONS],
-    rnd_sides: [u64; Sides::Both as usize],
+    rnd_sides: [u64; NrOf::SIDES],
     // TODO: change to only use 16 en-passant keys
     rnd_en_passant: [u64; NrOf::SQUARES],
 }
@@ -21,9 +22,9 @@ impl ZobristRandoms {
         let seed: [u8; 32] = [42; 32];
         let mut rng = ChaChaRng::from_seed(seed);
         let mut zobrist_randoms = Self {
-            rnd_pieces: [[[0u64; NrOf::SQUARES]; NrOf::PIECE_TYPES]; Sides::Both as usize],
+            rnd_pieces: [[[0u64; NrOf::SQUARES]; NrOf::PIECE_TYPES]; NrOf::SIDES],
             rnd_castling: [0u64; NrOf::CASTLING_PERMISSIONS],
-            rnd_sides: [0u64; Sides::Both as usize],
+            rnd_sides: [0u64; NrOf::SIDES],
             rnd_en_passant: [0u64; NrOf::SQUARES],
         };
 
@@ -53,18 +54,18 @@ impl ZobristRandoms {
         self.rnd_castling[permission as usize]
     }
 
-    pub fn sides(&self, side: Sides) -> ZobristKey {
+    pub fn sides(&self, side: u8) -> ZobristKey {
         self.rnd_sides[side as usize]
     }
 
     pub fn en_passant(&self, square: Option<Square>) -> ZobristKey {
         if let Some(sq) = square {
-            return self.rnd_en_passant[sq as usize];
+            self.rnd_en_passant[sq as usize]
         } else {
-            return 0;
+            0
         }
     }
-    pub fn pieces(&self, side: Sides, piece: Pieces, square: Square) -> ZobristKey {
+    pub fn pieces(&self, side: u8, piece: Pieces, square: Square) -> ZobristKey {
         self.rnd_pieces[side as usize][piece as usize][square as usize]
     }
 }
