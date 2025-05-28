@@ -124,9 +124,11 @@ impl Board {
                     Some(s) => square = s,
                     None => continue,
                 }
-                key ^= self
-                    .zobrist_randoms
-                    .pieces(side as u8, Pieces::from_index(piece), square);
+                key ^= self.zobrist_randoms.pieces(
+                    side as u8,
+                    Pieces::try_from(piece).unwrap(),
+                    square,
+                );
             }
         }
         println!("Done initializing ZobristKey");
@@ -176,13 +178,17 @@ impl Board {
 
             bb_b.iter().enumerate().for_each(|(piece_num, &bb)| {
                 if bb & mask != 0 {
-                    piece_list[square] = Pieces::from_index(piece_num);
+                    piece_list[square] = Pieces::try_from(piece_num).unwrap();
                 }
             });
 
             bb_w.iter().enumerate().for_each(|(piece_num, &bb)| {
                 if bb & mask != 0 {
-                    piece_list[square] = Pieces::from_index(piece_num);
+                    if let Ok(piece) = Pieces::try_from(piece_num) {
+                        piece_list[square] = piece;
+                    } else {
+                        panic!("Trying to convert unsupported type to `Piece`");
+                    }
                 }
             });
         });

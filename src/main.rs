@@ -13,20 +13,15 @@ use pieces::Pieces;
 
 fn main() {
     println!("Hello, world!");
-    let mut board = Board::fen(Some(
-        "rnbqkbnr/pp2pppp/2p5/3pP3/3P4/8/PPP2PPP/RNBQKBNR b KQkq - 0 1",
-    ));
-    let m: Move = Move::new(
-        Pieces::King,
-        board.king(board.opponent()),
-        board.king(board.opponent()) + 2,
-        MoveType::Castle(Kingside),
-    );
+    // let mut board = Board::fen(Some("8/1k1K4/8/8/8/8/8/Rn6 w - - 0 1"));
+    // let capture: Move = Move::new(Pieces::Rook, 0, 1, MoveType::Capture(Pieces::Knight));
+    let mut board = Board::fen(Some("1k6/8/8/8/8/8/8/R3K2R w KQ - 0 1"));
+    let castle_white_queenside: Move = Move::new(Pieces::King, 4, 2, MoveType::Castle(Queenside));
     board.display();
-    board.make(m);
+    board.make(castle_white_queenside);
     println!("Making move");
     board.display();
-    // println!("Unmaking move");
-    // board.unmake();
-    // board.display();
+    println!("Unmaking move");
+    board.unmake();
+    board.display();
 }

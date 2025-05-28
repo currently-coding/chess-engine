@@ -179,16 +179,15 @@ impl Board {
     }
 
     fn castle(&mut self, piece: Pieces, from: Square, to: Square, direction: moves::Castle) {
-        // BUG: white kingside castling does not work
-
         // move king as per move
-        self.regular_move(self.we(), piece, from, to);
+        let king = self.king(self.we());
         // move rook in relation to king
         let rooks = get_rook_start_squares(&self.game_state);
         let kingside_rook = rooks[0];
         let queenside_rook = rooks[1];
         match direction {
             Kingside => {
+                self.regular_move(self.we(), Pieces::King, king, king + 2);
                 self.regular_move(
                     self.we(),
                     Pieces::Rook,
@@ -197,6 +196,7 @@ impl Board {
                 );
             }
             Queenside => {
+                self.regular_move(self.we(), Pieces::King, king, king - 2);
                 self.regular_move(
                     self.we(),
                     Pieces::Rook,

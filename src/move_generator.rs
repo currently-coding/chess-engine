@@ -19,7 +19,6 @@ impl MoveGenerator {
             king: [0; NrOf::SQUARES],
         };
         mg.init_pawn();
-        // mg.init_knight();
         mg.init_bisphop();
         mg.init_rook();
         mg.init_king();
