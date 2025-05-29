@@ -9,6 +9,19 @@ pub struct Move {
     to: u8,
     kind: MoveType,
 }
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MoveType {
+    Regular,
+    Capture(Pieces),
+    Promotion(Pieces),
+    Castle(Castle),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Castle {
+    Kingside,
+    Queenside,
+}
 
 impl Move {
     pub fn default() -> Self {
@@ -45,38 +58,12 @@ impl Move {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum MoveType {
-    Regular,
-    Capture(Pieces),
-    Promotion(Pieces),
-    Castle(Castle),
-}
-
-// impl PartialEq for MoveType {
-//     fn eq(&self, other: &MoveType) -> bool {
-//         match (self, other) {
-//             (MoveType::Regular, MoveType::Regular) => true, // compare Regular
-//             (MoveType::Capture(a), MoveType::Capture(b)) => a == b, // compare Capture inner
-//             (MoveType::Promotion(a), MoveType::Promotion(b)) => a == b, // compare Promotion inner
-//             (MoveType::Castle(a), MoveType::Castle(b)) => a == b, // compare Castle inner
-//             _ => false,                                     // different variants
-//         }
-//     }
-// }
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Castle {
-    Kingside,
-    Queenside,
-}
-
 impl fmt::Debug for Move {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Move {{ piece: {:?} from {} to {}. Kind: {:?}}}",
-            self.piece, self.from, self.to, self.kind
+            "Move{{ {:?} with {:?}: {} -> {} }}",
+            self.kind, self.piece, self.from, self.to
         )
     }
 }

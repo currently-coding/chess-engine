@@ -53,13 +53,4 @@ impl GameHistory {
     pub fn previous(&self) -> Option<&GameState> {
         self.get_ref(self.count - 1)
     }
-    pub fn print(&self) {
-        println!("BOARD.HISTORY ----------");
-        for index in 0..=self.count {
-            if let Some(gamestate) = self.get_ref(index) {
-                println!("History {}", index);
-                gamestate.debug();
-            }
-        }
-    }
 }

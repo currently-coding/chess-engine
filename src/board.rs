@@ -31,9 +31,9 @@ pub struct Board {
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
-        println!("COMPARISON:");
-        self.game_state.debug();
-        other.game_state.debug();
+        // println!("COMPARISON:");
+        // self.game_state.debug();
+        // other.game_state.debug();
 
         self.pieces == other.pieces && // compare pieces
         self.side == other.side && // compare side
@@ -65,7 +65,6 @@ impl Board {
         }
     }
     fn init(&mut self) {
-        println!("initializing board...");
         self.init_side_bb();
         self.init_piece_list();
         self.game_state.zobrist_key = self.init_zobrist_key();
@@ -107,7 +106,7 @@ impl Board {
 
 impl Board {
     pub fn init_zobrist_key(&self) -> ZobristKey {
-        println!("initializing ZobristKey");
+        print!("Initializing ZobristKey...");
         let mut key: u64 = 0;
         key ^= self.zobrist_randoms.castling(self.game_state.castling);
         key ^= self.zobrist_randoms.en_passant(self.game_state.en_passant);
@@ -131,17 +130,17 @@ impl Board {
                 );
             }
         }
-        println!("Done initializing ZobristKey");
+        println!(" Success");
         key
     }
 
-    pub fn fen(fen_input: Option<&str>) -> Self {
+    pub fn fen(fen_input: Option<String>) -> Self {
         let mut board = Board::new();
-        let mut fen = FEN_START_POSITION;
+        let mut fen = String::from(FEN_START_POSITION);
         if let Some(string) = fen_input {
             fen = string;
         }
-        let result = board.fen_setup(fen);
+        let result = board.fen_setup(&fen);
         if let Err(e) = result {
             println!("Error: {}", e);
         }
@@ -205,7 +204,7 @@ impl Board {
         }
     }
     pub fn fen_setup(&mut self, fen_string: &str) -> Result<(), FenError> {
-        println!("Setting up from FEN: {}", fen_string);
+        print!("Setting up from FEN: {}", fen_string);
         let parts = split_fen_string(fen_string)?;
         // only modify copy in case the fen is invalid
         let mut tmp_board = self.clone();
@@ -215,11 +214,10 @@ impl Board {
             parser(&mut tmp_board, part)?;
         }
         // self.pieces and some stuff is set up. now init self.side, self.piece_list, etc.
-        tmp_board.debug_bb();
         tmp_board.init();
         println!("--------");
         *self = tmp_board;
-        self.debug_bb();
+        println!(" -> Success");
         Ok(())
     }
 
@@ -344,9 +342,9 @@ mod tests {
         let board = Board::fen(None);
         board.debug_bb();
         assert!(!board.draw_by_insufficient_material());
-        let board = Board::fen(Some("8/8/8/5k2/8/7Q/1K6/8 w - - 0 1"));
+        let board = Board::fen(Some("8/8/8/5k2/8/7Q/1K6/8 w - - 0 1".to_string()));
         assert!(!board.draw_by_insufficient_material());
-        let board = Board::fen(Some("8/8/3b4/5k2/8/8/1K6/8 w - - 0 1"));
+        let board = Board::fen(Some("8/8/3b4/5k2/8/8/1K6/8 w - - 0 1".to_string()));
         assert!(board.draw_by_insufficient_material());
     }
 }

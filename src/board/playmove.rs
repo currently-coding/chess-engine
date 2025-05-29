@@ -119,6 +119,7 @@ impl Board {
         };
     }
     pub fn make(&mut self, m: Move) {
+        print!("Making move: {:?}", m);
         // create a respawn point
         self.game_state.next_move = m;
         self.history.push(self.game_state);
@@ -138,7 +139,10 @@ impl Board {
                 self.regular_move(self.we(), piece, m.from(), m.to());
                 self.promotion_move(piece, m.to(), promoted_piece);
             }
-            MoveType::Castle(direction) => self.castle(m.piece(), m.from(), m.to(), direction),
+            MoveType::Castle(direction) => {
+                self.castle(direction);
+                self.update_castling_permissions(0);
+            }
         }
         // swap side
         self.switch_side();
@@ -165,6 +169,7 @@ impl Board {
         // - castling
         // - checks
         // - pins
+        println!(" -> Success");
     }
     fn capture_move(&mut self, piece: Pieces, from: Square, to: Square, captured_piece: Pieces) {
         // remove piece that will be captured
@@ -178,7 +183,7 @@ impl Board {
         self.put_piece(self.we(), promoted_piece, square);
     }
 
-    fn castle(&mut self, piece: Pieces, from: Square, to: Square, direction: moves::Castle) {
+    fn castle(&mut self, direction: moves::Castle) {
         // move king as per move
         let king = self.king(self.we());
         // move rook in relation to king
@@ -206,8 +211,6 @@ impl Board {
             }
         }
     }
-
-    fn swap_piece(&mut self, piece: Pieces, square: Square) {}
 }
 
 fn get_rook_start_squares(state: &GameState) -> [Square; 2] {
@@ -272,7 +275,7 @@ mod tests {
         assert_eq!(board_copy, board);
 
         // CAPTURE
-        board = Board::fen(Some("8/8/4k3/8/K7/8/8/Rn6 w - - 0 1"));
+        board = Board::fen(Some("8/8/4k3/8/K7/8/8/Rn6 w - - 0 1".to_string()));
         board_copy = board.clone();
         let m: Move = Move::new(Pieces::Rook, 0, 1, MoveType::Capture(Pieces::Knight));
         board_copy.game_state.next_move = m;
@@ -281,7 +284,7 @@ mod tests {
         assert_eq!(board_copy, board);
 
         // PROMOTION
-        board = Board::fen(Some("k7/8/2K5/8/8/8/p7/8 w - - 0 1"));
+        board = Board::fen(Some("k7/8/2K5/8/8/8/p7/8 w - - 0 1".to_string()));
         board_copy = board.clone();
         let m: Move = Move::new(Pieces::Pawn, 8, 0, MoveType::Promotion(Pieces::Queen));
         board_copy.game_state.next_move = m;
@@ -291,7 +294,7 @@ mod tests {
 
         // CASTLING
         // WHITE KINGSIDE
-        board = Board::fen(Some("1k6/8/8/8/8/8/8/4K2R w K - 0 1"));
+        board = Board::fen(Some("1k6/8/8/8/8/8/8/4K2R w K - 0 1".to_string()));
         board_copy = board.clone();
         let m: Move = Move::new(Pieces::King, 4, 6, MoveType::Castle(Kingside));
         board_copy.game_state.next_move = m;
@@ -300,7 +303,7 @@ mod tests {
         assert_eq!(board_copy, board);
 
         // WHITE QUEENSIDE
-        board = Board::fen(Some("1k6/8/8/8/8/8/8/R3K3 w Q - 0 1"));
+        board = Board::fen(Some("1k6/8/8/8/8/8/8/R3K3 w Q - 0 1".to_string()));
         board_copy = board.clone();
         let m: Move = Move::new(Pieces::King, 4, 2, MoveType::Castle(Queenside));
         board_copy.game_state.next_move = m;

@@ -19,9 +19,9 @@ pub struct GameState {
 
 impl PartialEq for GameState {
     fn eq(&self, other: &GameState) -> bool {
-        println!("COMPARISON:");
-        self.debug();
-        other.debug();
+        // println!("COMPARISON:");
+        // self.debug();
+        // other.debug();
         self.active_color == other.active_color
             && self.castling == other.castling
             && self.halfmove_clock == other.halfmove_clock

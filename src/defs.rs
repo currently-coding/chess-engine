@@ -21,6 +21,7 @@ pub const EN_PASSANT_END_SQUARES_WHITE: RangeInclusive<Square> = Squares::A4..=S
 pub const EN_PASSANT_END_SQUARES_BLACK: RangeInclusive<Square> = Squares::A5..=Squares::H5;
 // ---
 pub struct Castling;
+#[allow(dead_code)]
 impl Castling {
     pub const WK: u8 = 1; // 0001
     pub const WQ: u8 = 2; // 0010
@@ -31,6 +32,7 @@ impl Castling {
 
 // BOARD NUMBER CONSTANTS
 pub struct NrOf;
+#[allow(dead_code)]
 impl NrOf {
     pub const PIECE_TYPES: usize = 6;
     pub const CASTLING_PERMISSIONS: usize = 16; // 0-15
@@ -45,6 +47,7 @@ pub const BLACK: u8 = 1;
 
 // TRANSLATION
 #[rustfmt::skip]
+#[allow(dead_code)]
 pub const SQUARE_NAME: [&str; NrOf::SQUARES] = [
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
@@ -55,13 +58,17 @@ pub const SQUARE_NAME: [&str; NrOf::SQUARES] = [
     "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 ];
+#[allow(dead_code)]
 pub const PIECE_NAME: [&str; NrOf::PIECE_TYPES + 1] =
     ["King", "Queen", "Rook", "Bishop", "Knight", "Pawn", "-"];
+#[allow(dead_code)]
 pub const PIECE_CHAR_CAPS: [&str; NrOf::PIECE_TYPES + 1] = ["K", "Q", "R", "B", "N", "P", "_"];
+#[allow(dead_code)]
 pub const PIECE_CHAR_SMALL: [&str; NrOf::PIECE_TYPES + 1] = ["k", "q", "r", "b", "n", "", ""];
 
 // IMPORTANT BOARD SQUARES
 pub struct Squares;
+#[allow(dead_code)]
 impl Squares {
     // White side squares that are important for castling
     pub const A1: Square = 0;
@@ -83,7 +90,6 @@ impl Squares {
     pub const G8: Square = 62;
     pub const H8: Square = 63;
 
-    // all En-Passant related squares/ranges
     // White EP-squares start/end
     pub const A3: Square = 16;
     pub const H3: Square = 23;
@@ -111,6 +117,7 @@ impl Squares {
 
 // BOARD RANKS AND FILES
 pub struct Files;
+#[allow(dead_code)]
 impl Files {
     pub const A: usize = 0;
     pub const B: usize = 1;
@@ -119,6 +126,7 @@ impl Files {
 }
 
 pub struct Ranks;
+#[allow(dead_code)]
 impl Ranks {
     pub const R1: usize = 0;
     pub const R2: usize = 1;
@@ -130,6 +138,7 @@ impl Ranks {
 
 // BOARD RANGES
 pub struct RangeOf;
+#[allow(dead_code)]
 impl RangeOf {
     pub const RANKS: RangeInclusive<u8> = (Ranks::R1 as u8)..=(Ranks::R8 as u8);
     pub const FILES: RangeInclusive<u8> = (Files::A as u8)..=(Files::H as u8);

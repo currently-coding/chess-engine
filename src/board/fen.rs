@@ -109,7 +109,7 @@ pub fn en_passant(board: &mut Board, part: &str) -> Result<(), FenError> {
 
 pub fn half_move_counter(board: &mut Board, part: &str) -> Result<(), FenError> {
     if part.is_empty() || part.len() > 4 {
-        return Err(FenError::Part6);
+        return Err(FenError::Part5);
     }
     if let Ok(x) = part.parse::<u16>() {
         if x <= MAX_MOVE_RULE as u16 {
@@ -124,7 +124,9 @@ pub fn full_move_counter(board: &mut Board, part: &str) -> Result<(), FenError> 
     if part.is_empty() || part.len() > 4 {
         return Err(FenError::Part6);
     }
-    if let Ok(x) = part.parse::<u16>() {
+    let trimmed = part.trim();
+    if let Ok(x) = trimmed.parse::<u16>() {
+        print!("num: {}", x);
         if x <= MAX_GAME_MOVES as u16 {
             board.game_state.fullmove_number = x;
             return Ok(());
@@ -158,7 +160,6 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
             return Err(FenError::Part1);
         }
         if c.is_alphabetic() {
-            println!("It's a piece!");
             bitmask = helper::get_bitmask(square);
         }
 
@@ -238,7 +239,6 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
     // fen strings set h1=7 last
     if rank == 0 && file == 8 {
         println!("Bitboards after fen reading:");
-        board.debug_bb();
         Ok(())
     } else {
         println!("Error: did not correctly SET ALL SQUARES.");
