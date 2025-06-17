@@ -14,14 +14,15 @@ use zobrist::ZobristKey;
 use zobrist::ZobristRandoms;
 
 use self::{fen::*, gamestate::GameState, history::GameHistory, pieces::Pieces};
+use crate::bitboard::Bitboard;
 use crate::defs::*;
 use crate::helper;
 use crate::helper::*;
 
 #[derive(Clone)]
 pub struct Board {
-    pub pieces: [[Bitboard; NrOf::PIECE_TYPES]; NrOf::SIDES],
-    pub side: [Bitboard; NrOf::SIDES],
+    pub pieces: [[u64; NrOf::PIECE_TYPES]; NrOf::SIDES],
+    pub side: [u64; NrOf::SIDES],
     pub game_state: GameState,
     pub history: GameHistory,
     pub piece_list: [Pieces; NrOf::SQUARES],
@@ -112,22 +113,21 @@ impl Board {
         key ^= self.zobrist_randoms.en_passant(self.game_state.en_passant);
         key ^= self.zobrist_randoms.sides(self.game_state.active_color);
 
-        let mut square: u8;
-        let mut tmp_square: Option<u8>;
         // TODO: could be reduced to manually get black and wihte instead of iterating over sides
         for (side, side_bb) in self.pieces.iter().enumerate() {
             for (piece, piece_bb) in side_bb.iter().enumerate() {
-                let mut p = *piece_bb;
-                tmp_square = helper::next_bit(&mut p);
-                match tmp_square {
-                    Some(s) => square = s,
-                    None => continue,
+                println!("bb: {:064b}", piece_bb);
+                let bb: Bitboard = Bitboard::new(*piece_bb);
+                print!("Squares: ");
+                for square in bb {
+                    print!("{} -> ", square);
+                    key ^= self.zobrist_randoms.pieces(
+                        side as u8,
+                        Pieces::try_from(piece).unwrap(),
+                        square,
+                    );
                 }
-                key ^= self.zobrist_randoms.pieces(
-                    side as u8,
-                    Pieces::try_from(piece).unwrap(),
-                    square,
-                );
+                println!()
             }
         }
         println!(" Success");
@@ -149,7 +149,7 @@ impl Board {
     pub fn we(&self) -> u8 {
         self.game_state.active_color
     }
-    pub fn occupancy(&self) -> Bitboard {
+    pub fn occupancy(&self) -> u64 {
         self.side[WHITE as usize] | self.side[BLACK as usize]
     }
     pub fn opponent(&self) -> u8 {
@@ -158,7 +158,7 @@ impl Board {
     pub fn get_pieces(&self, side: u8, piece: Pieces) -> u64 {
         self.pieces[side as usize][piece as usize]
     }
-    pub fn get_side(&self, side: u8) -> Bitboard {
+    pub fn get_side(&self, side: u8) -> u64 {
         self.side[side as usize]
     }
     pub fn king(&self, side: u8) -> Square {
