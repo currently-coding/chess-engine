@@ -115,14 +115,16 @@ impl Board {
 
         // TODO: could be reduced to manually get black and wihte instead of iterating over sides
         for (side, side_bb) in self.pieces.iter().enumerate() {
-            for (piece, piece_bb) in side_bb.iter().enumerate() {
-                let bb: Bitboard = Bitboard::new(*piece_bb);
-                for square in bb {
-                    key ^= self.zobrist_randoms.pieces(
-                        side as u8,
-                        Pieces::try_from(piece).unwrap(),
-                        square,
-                    );
+            for (piece_idx, piece_bb) in side_bb.iter().enumerate() {
+                let piece = match Pieces::try_from(piece_idx) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        println!("{:?}", e);
+                        panic!();
+                    }
+                };
+                for square in Bitboard::new(*piece_bb) {
+                    key ^= self.zobrist_randoms.pieces(side as u8, piece, square);
                 }
                 println!()
             }
