@@ -1,5 +1,6 @@
+use crate::board::pieces::Pieces;
 use crate::defs::*;
-use crate::{helper::get_bitmask, moves::Move, NrOf};
+use crate::{helper::get_bitmask, NrOf};
 
 pub struct MoveGenerator {
     pawn: [[u64; NrOf::SQUARES]; NrOf::SIDES],
@@ -25,6 +26,19 @@ impl MoveGenerator {
         mg.init_rook();
         mg.init_king();
         mg
+    }
+    pub fn get_moves(&self, side: u8, piece: &Pieces, square: u8) -> u64 {
+        let side = side as usize;
+        let square = square as usize;
+        match piece {
+            Pieces::Pawn => self.pawn[side][square],
+            Pieces::Bishop => self.bishop[square],
+            Pieces::Knight => self.knight[square],
+            Pieces::Rook => self.rook[square],
+            Pieces::Queen => self.rook[square] | self.bishop[square],
+            Pieces::King => self.king[square],
+            Pieces::Empty => panic!("Cannot generate moves for Piece \"Empty\"."),
+        }
     }
 
     fn init_pawn(&mut self) {
@@ -68,6 +82,26 @@ impl MoveGenerator {
             (2, -1),
         ];
         self.knight = get_attacks(dirs);
+    }
+
+    pub fn pawn(&self) -> [[u64; NrOf::SQUARES]; NrOf::SIDES] {
+        self.pawn
+    }
+
+    pub fn knight(&self) -> [u64; NrOf::SQUARES] {
+        self.knight
+    }
+
+    pub fn bishop(&self) -> [u64; NrOf::SQUARES] {
+        self.bishop
+    }
+
+    pub fn rook(&self) -> [u64; NrOf::SQUARES] {
+        self.rook
+    }
+
+    pub fn king(&self) -> [u64; NrOf::SQUARES] {
+        self.king
     }
 }
 fn get_attacks(dirs: Vec<(i8, i8)>) -> [u64; 64] {
