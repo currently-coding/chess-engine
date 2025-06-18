@@ -14,6 +14,21 @@ pub enum Pieces {
     Empty = 6,
 }
 
+impl Pieces {
+    // i know it's a lazy implementation but properly implementing `Interator` is wayy too
+    // complicated for the few usecases we have for this
+    pub fn iter() -> &'static [Pieces] {
+        &[
+            Pieces::Pawn,
+            Pieces::Bishop,
+            Pieces::Knight,
+            Pieces::Rook,
+            Pieces::Queen,
+            Pieces::King,
+        ]
+    }
+}
+
 impl TryFrom<usize> for Pieces {
     type Error = ();
 
