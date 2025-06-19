@@ -8,7 +8,6 @@ pub mod sides;
 mod zobrist;
 
 use core::fmt;
-use std::ops::RangeInclusive;
 use std::sync::Arc;
 
 use moves::Castle::*;
@@ -37,14 +36,10 @@ pub struct Board {
 
 impl PartialEq for Board {
     fn eq(&self, other: &Self) -> bool {
-        // println!("COMPARISON:");
-        // self.game_state.debug();
-        // other.game_state.debug();
-
-        self.pieces == other.pieces && // compare pieces
-        self.side == other.side && // compare side
-        self.game_state == other.game_state && // compare game state
-        self.piece_list == other.piece_list // ignore zobrist_randoms
+        self.pieces == other.pieces
+            && self.side == other.side
+            && self.game_state == other.game_state
+            && self.piece_list == other.piece_list
     }
 }
 
@@ -114,19 +109,49 @@ impl Board {
     pub fn get_moves(&self, mg: &MoveGenerator) -> Vec<Move> {
         let mut moves: Vec<Move> = Vec::new();
         let active_piece = self.side[self.we() as usize];
+        let opponent = self.side[self.opponent() as usize];
+        let we = self.side[self.we() as usize];
         for (square, piece) in self.piece_list.iter().enumerate() {
             let position = get_bitmask(square as u8);
             if active_piece & position == 0 {
                 // just generate moves for the active side
                 continue;
             }
-            let possible_moves = Bitboard::new(mg.get_moves(self.we(), piece, square as u8));
+            let possible_moves: Bitboard = match *piece {
+                Pieces::Bishop => Bitboard::new(MoveGenerator::sliding_attacks(
+                    square as u8,
+                    &MoveGenerator::BISHOP_DIRS,
+                    opponent,
+                    we,
+                )),
+                Pieces::Rook => Bitboard::new(MoveGenerator::sliding_attacks(
+                    square as u8,
+                    &MoveGenerator::ROOK_DIRS,
+                    opponent,
+                    we,
+                )),
+                Pieces::Queen => Bitboard::new(
+                    MoveGenerator::sliding_attacks(
+                        square as u8,
+                        &MoveGenerator::BISHOP_DIRS,
+                        opponent,
+                        we,
+                    ) | MoveGenerator::sliding_attacks(
+                        square as u8,
+                        &MoveGenerator::ROOK_DIRS,
+                        opponent,
+                        we,
+                    ),
+                ),
+                _ => Bitboard::new(mg.get_moves(self.we(), piece, square as u8)),
+            };
             for dest in possible_moves {
                 self.generate_moves(&mut moves, square as u8, dest, piece);
             }
         }
         moves
     }
+
     fn generate_moves(&self, moves: &mut Vec<Move>, from: u8, to: u8, piece: &Pieces) {
         let piece = *piece;
         let opponent: u64 = self.side[self.opponent() as usize];
@@ -151,7 +176,16 @@ impl Board {
                     }
                 }
             } else {
-                moves.push(Move::new(piece, from, to, Regular));
+                if opponent & to_mask > 0 {
+                    moves.push(Move::new(
+                        piece,
+                        from,
+                        to,
+                        Capture(self.piece_list[to as usize]),
+                    ));
+                } else {
+                    moves.push(Move::new(piece, from, to, Regular));
+                }
             }
         }
         // pawns: promotion, capture and blocked moves
