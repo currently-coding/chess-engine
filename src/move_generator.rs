@@ -43,8 +43,18 @@ impl MoveGenerator {
     }
 
     fn init_pawn(&mut self) {
-        self.pawn[WHITE as usize] = get_attacks(vec![(1, 0)]);
-        self.pawn[BLACK as usize] = get_attacks(vec![(-1, 0)]);
+        self.pawn[WHITE as usize] = get_attacks(vec![(1, 0), (1, -1), (1, 1)]);
+        self.pawn[BLACK as usize] = get_attacks(vec![(-1, 0), (-1, -1), (-1, 1)]);
+        for (square, bb) in self.pawn[WHITE as usize].iter_mut().enumerate() {
+            if EN_PASSANT_START_SQUARES_WHITE.contains(&(square as u8)) {
+                *bb |= get_bitmask((square + 16) as u8);
+            }
+        }
+        for (square, bb) in self.pawn[BLACK as usize].iter_mut().enumerate() {
+            if EN_PASSANT_START_SQUARES_BLACK.contains(&(square as u8)) {
+                *bb |= get_bitmask((square - 16) as u8);
+            }
+        }
     }
 
     fn init_bisphop(&mut self) {
