@@ -19,6 +19,8 @@ pub const EN_PASSANT_START_SQUARES_WHITE: RangeInclusive<Square> = Squares::A2..
 pub const EN_PASSANT_START_SQUARES_BLACK: RangeInclusive<Square> = Squares::A7..=Squares::H7;
 pub const EN_PASSANT_END_SQUARES_WHITE: RangeInclusive<Square> = Squares::A4..=Squares::H4;
 pub const EN_PASSANT_END_SQUARES_BLACK: RangeInclusive<Square> = Squares::A5..=Squares::H5;
+pub const PROMOTION_SQUARES_WHITE: RangeInclusive<Square> = Squares::A8..=Squares::H8;
+pub const PROMOTION_SQUARES_BLACK: RangeInclusive<Square> = Squares::A1..=Squares::H1;
 // ---
 pub struct Castling;
 #[allow(dead_code)]

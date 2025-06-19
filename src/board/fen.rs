@@ -126,7 +126,6 @@ pub fn full_move_counter(board: &mut Board, part: &str) -> Result<(), FenError> 
     }
     let trimmed = part.trim();
     if let Ok(x) = trimmed.parse::<u16>() {
-        print!("num: {}", x);
         if x <= MAX_GAME_MOVES as u16 {
             board.game_state.fullmove_number = x;
             return Ok(());
@@ -148,7 +147,6 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
     let mut bitmask: u64 = 0;
     for c in part.chars() {
         square = (rank * 8) + file;
-        println!("{}->", square);
         // may be 64 after placing a piece on 63, but must be followed by a '/'
         if file == 8 && c != '/' {
             println!("Error: Square > 63 and no '/'");
@@ -238,7 +236,6 @@ pub fn pieces(board: &mut Board, part: &str) -> Result<(), FenError> {
     }
     // fen strings set h1=7 last
     if rank == 0 && file == 8 {
-        println!("Bitboards after fen reading:");
         Ok(())
     } else {
         println!("Error: did not correctly SET ALL SQUARES.");

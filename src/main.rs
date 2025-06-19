@@ -1,3 +1,4 @@
+mod bitboard;
 mod board;
 mod cli;
 mod defs;
@@ -14,9 +15,27 @@ use moves::{
 use pieces::Pieces;
 
 fn main() {
-    let mg = MoveGenerator::new();
-    user();
+    move_gen();
+    // user();
     // testing();
+}
+
+fn move_gen() {
+    let mut mg = MoveGenerator::new();
+    let mut board = Board::fen(Some(String::from(
+        "1k6/8/8/8/4p3/1p1P4/1P4P1/3K4 w - - 0 1",
+    )));
+    board.display();
+    let moves = board.get_moves(&mg);
+    for m in moves {
+        println!("{:?}", m);
+    }
+    let mut board = Board::fen(Some(String::from("1k6/8/8/8/8/8/8/R2K3R w - - 0 1")));
+    board.display();
+    let moves = board.get_moves(&mg);
+    for m in moves {
+        println!("{:?}", m);
+    }
 }
 
 fn testing() {

@@ -8,8 +8,12 @@ pub mod sides;
 mod zobrist;
 
 use core::fmt;
+use std::ops::RangeInclusive;
 use std::sync::Arc;
 
+use moves::Castle::*;
+use moves::Move;
+use moves::MoveType::*;
 use zobrist::ZobristKey;
 use zobrist::ZobristRandoms;
 
@@ -18,6 +22,7 @@ use crate::bitboard::Bitboard;
 use crate::defs::*;
 use crate::helper;
 use crate::helper::*;
+use crate::move_generator::MoveGenerator;
 
 #[derive(Clone)]
 pub struct Board {
@@ -106,8 +111,96 @@ impl Board {
 }
 
 impl Board {
+    pub fn get_moves(&self, mg: &MoveGenerator) -> Vec<Move> {
+        let mut moves: Vec<Move> = Vec::new();
+        let active_piece = self.side[self.we() as usize];
+        for (square, piece) in self.piece_list.iter().enumerate() {
+            let position = get_bitmask(square as u8);
+            if active_piece & position == 0 {
+                // just generate moves for the active side
+                continue;
+            }
+            let possible_moves = Bitboard::new(mg.get_moves(self.we(), piece, square as u8));
+            for dest in possible_moves {
+                self.generate_moves(&mut moves, square as u8, dest, piece);
+            }
+        }
+        moves
+    }
+    fn generate_moves(&self, moves: &mut Vec<Move>, from: u8, to: u8, piece: &Pieces) {
+        let piece = *piece;
+        let opponent = self.side[self.opponent() as usize];
+        let diff = from.abs_diff(to);
+        let to_mask = get_bitmask(to);
+        let we = self.we();
+        // castle
+        if piece == Pieces::King {
+            // castle
+            if diff == 2 {
+                if we == WHITE {
+                    if from < to {
+                        moves.push(Move::new(piece, from, to, Castle(Kingside)));
+                    } else if to < from {
+                        moves.push(Move::new(piece, from, to, Castle(Queenside)));
+                    }
+                } else if we == BLACK {
+                    if to < from {
+                        moves.push(Move::new(piece, from, to, Castle(Queenside)));
+                    } else {
+                        moves.push(Move::new(piece, from, to, Castle(Kingside)));
+                    }
+                }
+            } else {
+                moves.push(Move::new(piece, from, to, Regular));
+            }
+        }
+        // pawns: promotion, capture and blocked moves
+        else if piece == Pieces::Pawn {
+            let promotion_squares = if we == WHITE {
+                PROMOTION_SQUARES_WHITE
+            } else {
+                PROMOTION_SQUARES_BLACK
+            };
+            if promotion_squares.contains(&to) {
+                for promotion_piece in Pieces::iter() {
+                    moves.push(Move::new(piece, from, to, Promotion(*promotion_piece)));
+                }
+            }
+            // diagonal move + capture
+            if (diff == 9 || diff == 7) && (opponent & to_mask) > 0 {
+                moves.push(Move::new(
+                    piece,
+                    from,
+                    to,
+                    Capture(self.piece_list[to as usize]),
+                ));
+            // double move
+            } else if diff == 16 {
+                // check for blocks
+                if (opponent & to_mask) > 0 && (opponent & get_bitmask(from + 8)) > 0 {
+                    moves.push(Move::new(piece, from, to, Regular));
+                }
+            // single move
+            } else if diff == 8 && (opponent & to_mask) > 0 {
+                moves.push(Move::new(piece, from, to, Regular));
+            }
+        }
+        // capture
+        else if opponent & to_mask > 0 {
+            moves.push(Move::new(
+                piece,
+                from,
+                to,
+                Capture(self.piece_list[to as usize]),
+            ));
+        }
+        // regular
+        else {
+            moves.push(Move::new(piece, from, to, Regular));
+        }
+    }
+
     pub fn init_zobrist_key(&self) -> ZobristKey {
-        print!("Initializing ZobristKey...");
         let mut key: u64 = 0;
         key ^= self.zobrist_randoms.castling(self.game_state.castling);
         key ^= self.zobrist_randoms.en_passant(self.game_state.en_passant);
@@ -126,10 +219,8 @@ impl Board {
                 for square in Bitboard::new(*piece_bb) {
                     key ^= self.zobrist_randoms.pieces(side as u8, piece, square);
                 }
-                println!()
             }
         }
-        println!(" Success");
         key
     }
 
@@ -164,10 +255,9 @@ impl Board {
         self.get_pieces(side, Pieces::King).trailing_zeros() as Square
     }
 
-    // seems to work
     fn init_piece_list(&mut self) {
-        let bb_w = &self.pieces[WHITE as usize]; // White piece bitboards
-        let bb_b = &self.pieces[BLACK as usize]; // Black piece bitboards
+        let bb_w = &self.pieces[WHITE as usize];
+        let bb_b = &self.pieces[BLACK as usize];
 
         let mut piece_list = [Pieces::Empty; NrOf::SQUARES];
 
@@ -194,7 +284,6 @@ impl Board {
         self.piece_list = piece_list;
     }
 
-    // pretty sure that works (although no tests yet)
     fn init_side_bb(&mut self) {
         for (idx, side) in self.pieces.iter().enumerate() {
             for bb in side {
@@ -205,16 +294,13 @@ impl Board {
     pub fn fen_setup(&mut self, fen_string: &str) -> Result<(), FenError> {
         print!("Setting up from FEN: {}", fen_string);
         let parts = split_fen_string(fen_string)?;
-        // only modify copy in case the fen is invalid
         let mut tmp_board = self.clone();
         tmp_board.reset();
         let parsers = create_fen_parsers();
         for (part, parser) in parts.iter().zip(parsers.iter()) {
             parser(&mut tmp_board, part)?;
         }
-        // self.pieces and some stuff is set up. now init self.side, self.piece_list, etc.
         tmp_board.init();
-        println!("--------");
         *self = tmp_board;
         println!(" -> Success");
         Ok(())
