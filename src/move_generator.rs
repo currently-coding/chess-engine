@@ -1,6 +1,6 @@
+use crate::board::moves::Move;
 use crate::board::pieces::Pieces;
 use crate::defs::*;
-use crate::helper::print_bitboard;
 use crate::{helper::get_bitmask, NrOf};
 
 pub struct MoveGenerator {
@@ -13,6 +13,29 @@ pub struct MoveGenerator {
 }
 
 impl MoveGenerator {
+    pub const KNIGHT_DIRS: [(i8, i8); 8] = [
+        (-1, 2),
+        (-1, -2),
+        (-2, -1),
+        (-2, 1),
+        (1, -2),
+        (1, 2),
+        (2, 1),
+        (2, -1),
+    ];
+    pub const BISHOP_DIRS: [(i8, i8); 4] = [(-1, -1), (-1, 1), (1, -1), (1, 1)];
+    pub const ROOK_DIRS: [(i8, i8); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
+    pub const KING_DIRS: [(i8, i8); 8] = [
+        (-1, -1),
+        (-1, 0),
+        (-1, 1),
+        (0, -1),
+        (0, 1),
+        (1, -1),
+        (1, 0),
+        (1, 1),
+    ];
+
     pub fn new() -> Self {
         let mut mg = MoveGenerator {
             pawn: [[0; NrOf::SQUARES]; NrOf::SIDES],
@@ -56,45 +79,53 @@ impl MoveGenerator {
             }
         }
     }
+    pub fn sliding_attacks(
+        square: u8,
+        directions: &[(i8, i8)],
+        captures: u64,
+        blockers: u64,
+    ) -> u64 {
+        let mut attacks = 0;
+        let (rank, file) = (square / 8, square % 8);
+
+        for &(dr, df) in directions {
+            let mut r = rank as i8 + dr;
+            let mut f = file as i8 + df;
+
+            while (0..8).contains(&r) && (0..8).contains(&f) {
+                let sq = (r * 8 + f) as u8;
+                let bb = get_bitmask(sq);
+                if blockers & bb != 0 {
+                    break;
+                }
+                attacks |= bb;
+                if captures & bb != 0 {
+                    break; // blocked, stop here
+                }
+                r += dr;
+                f += df;
+            }
+        }
+
+        attacks
+    }
 
     fn init_bisphop(&mut self) {
-        let dirs = vec![(-1, -1), (-1, 1), (1, -1), (1, 1)];
-        self.bishop = get_slide_attacks(dirs);
+        self.bishop = get_slide_attacks(Vec::from(MoveGenerator::BISHOP_DIRS));
     }
 
     fn init_rook(&mut self) {
-        let dirs = vec![(1, 0), (-1, 0), (0, -1), (0, 1)];
-        self.rook = get_slide_attacks(dirs);
+        self.rook = get_slide_attacks(Vec::from(MoveGenerator::ROOK_DIRS));
     }
 
     fn init_king(&mut self) {
-        let dirs = vec![
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (0, -1),
-            (0, 1),
-            (1, -1),
-            (1, 0),
-            (1, 1),
-        ];
-        self.king = get_attacks(dirs);
+        self.king = get_attacks(Vec::from(MoveGenerator::KING_DIRS));
         self.king[Squares::E1 as usize] |= get_bitmask(Squares::C1) | get_bitmask(Squares::G1);
         self.king[Squares::E8 as usize] |= get_bitmask(Squares::C8) | get_bitmask(Squares::G8);
     }
 
     fn init_knight(&mut self) {
-        let dirs = vec![
-            (-1, 2),
-            (-1, -2),
-            (-2, -1),
-            (-2, 1),
-            (1, -2),
-            (1, 2),
-            (2, 1),
-            (2, -1),
-        ];
-        self.knight = get_attacks(dirs);
+        self.knight = get_attacks(Vec::from(MoveGenerator::KNIGHT_DIRS));
     }
 
     pub fn pawn(&self) -> [[u64; NrOf::SQUARES]; NrOf::SIDES] {
