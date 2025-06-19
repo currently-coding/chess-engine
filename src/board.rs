@@ -129,10 +129,10 @@ impl Board {
     }
     fn generate_moves(&self, moves: &mut Vec<Move>, from: u8, to: u8, piece: &Pieces) {
         let piece = *piece;
-        let opponent = self.side[self.opponent() as usize];
-        let diff = from.abs_diff(to);
-        let to_mask = get_bitmask(to);
-        let we = self.we();
+        let opponent: u64 = self.side[self.opponent() as usize];
+        let diff: u8 = from.abs_diff(to);
+        let to_mask: u64 = get_bitmask(to);
+        let we: u8 = self.we();
         // castle
         if piece == Pieces::King {
             // castle
@@ -161,13 +161,16 @@ impl Board {
             } else {
                 PROMOTION_SQUARES_BLACK
             };
-            if promotion_squares.contains(&to) {
+            if promotion_squares.contains(&to) && diff == 8 {
                 for promotion_piece in Pieces::iter() {
+                    if [Pieces::King, Pieces::Empty, Pieces::Pawn].contains(promotion_piece) {
+                        continue;
+                    }
                     moves.push(Move::new(piece, from, to, Promotion(*promotion_piece)));
                 }
             }
             // diagonal move + capture
-            if (diff == 9 || diff == 7) && (opponent & to_mask) > 0 {
+            else if (diff == 9 || diff == 7) && (opponent & to_mask) > 0 {
                 moves.push(Move::new(
                     piece,
                     from,
@@ -176,12 +179,15 @@ impl Board {
                 ));
             // double move
             } else if diff == 16 {
-                // check for blocks
-                if (opponent & to_mask) > 0 && (opponent & get_bitmask(from + 8)) > 0 {
+                println!("checking doulbe move");
+                if (opponent & to_mask) == 0 && (opponent & get_bitmask(from + 8)) == 0 {
+                    println!("yeahh");
                     moves.push(Move::new(piece, from, to, Regular));
+                } else {
+                    println!("fuckk");
                 }
             // single move
-            } else if diff == 8 && (opponent & to_mask) > 0 {
+            } else if diff == 8 && ((opponent & to_mask) == 0) {
                 moves.push(Move::new(piece, from, to, Regular));
             }
         }
