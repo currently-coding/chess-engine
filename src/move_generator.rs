@@ -1,5 +1,6 @@
 use crate::board::pieces::Pieces;
 use crate::defs::*;
+use crate::helper::print_bitboard;
 use crate::{helper::get_bitmask, NrOf};
 
 pub struct MoveGenerator {
@@ -68,6 +69,8 @@ impl MoveGenerator {
             (1, 1),
         ];
         self.king = get_attacks(dirs);
+        self.king[Squares::E1 as usize] |= get_bitmask(Squares::C1) | get_bitmask(Squares::G1);
+        self.king[Squares::E8 as usize] |= get_bitmask(Squares::C8) | get_bitmask(Squares::G8);
     }
 
     fn init_knight(&mut self) {
