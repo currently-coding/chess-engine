@@ -179,12 +179,8 @@ impl Board {
                 ));
             // double move
             } else if diff == 16 {
-                println!("checking doulbe move");
                 if (opponent & to_mask) == 0 && (opponent & get_bitmask(from + 8)) == 0 {
-                    println!("yeahh");
                     moves.push(Move::new(piece, from, to, Regular));
-                } else {
-                    println!("fuckk");
                 }
             // single move
             } else if diff == 8 && ((opponent & to_mask) == 0) {
